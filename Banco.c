@@ -85,7 +85,117 @@ void salvar_transacao(const char *tipo, const char *detalhes) {
     time_t agora = time(NULL);
     struct tm *t = localtime(&agora);
     snprintf(transacao, sizeof(transacao), "[%02d/%02d/%d %02d:%02d:%02d] %s: %s", 
-             t->tm_mday, t->tm_mon + 1, t->tm_year + 1900, 
-             t->tm_hour, t->tm_min, t->tm_sec, tipo, detalhes);
+            t->tm_mday, t->tm_mon + 1, t->tm_year + 1900, 
+            t->tm_hour, t->tm_min, t->tm_sec, tipo, detalhes);
     escrever_no_extrato(transacao);
 } 
+
+// Funçao pra exibir o menu 
+void exibir_menu(Conta *conta) {
+    int escolha;
+    printf("\n--- MENU ---\n");
+    printf("1. Consultar saldo\n");
+    printf("2. Ver extrato\n");
+    printf("3. Depositar\n");
+    printf("4. Sacar\n");
+    printf("5. Comprar criptomoedas\n");
+    printf("6. Vender criptomoedas\n");
+    printf("7. Atualizar cotação\n");
+    printf("8. Sair\n");
+
+    printf("Digite sua opção: ");
+    scanf("%d", &escolha);
+
+    switch (escolha) {
+        case 1:
+            consultar_saldo(conta);
+            break;
+        case 2:
+            ver_extrato();
+            break;
+        case 3:
+            conta->saldo = depositar(conta);
+            reescrever_no_txt(conta);
+            break;
+        case 4:
+            conta->saldo = sacar(conta);
+            reescrever_no_txt(conta);
+            break;
+        case 5:
+            comprar_criptomoedas(conta);
+            reescrever_no_txt(conta);
+            break;
+        case 6:
+            vender_criptomoedas(conta);
+            reescrever_no_txt(conta);
+            break;
+        case 7:
+            atualizar_cotacao(conta);
+            break;
+        case 8:
+            sair();
+            break;
+        default:
+            printf("Opção inválida. Tente novamente.\n");
+            exibir_menu(conta);
+    }
+}
+
+// Funçao pra consultar saldo
+void consultar_saldo(Conta *conta) {
+    printf("Reais: R$%.2f\n", conta->saldo);
+    printf("Bitcoin: %.6f\n", conta->bitcoin);
+    printf("Ethereum: %.6f\n", conta->ethereum);
+    printf("Ripple: %.6f\n", conta->ripple);
+    exibir_menu(conta);
+}
+
+// Funçao para ver o extrato
+void ver_extrato() {
+    FILE *arquivo = fopen("extrato.txt", "r");
+    char linha[256];
+    
+    if (arquivo == NULL) {
+        printf("Nenhum extrato encontrado.\n");
+    } else {
+        printf("\n--- EXTRATO ---\n");
+        while (fgets(linha, sizeof(linha), arquivo) != NULL) {
+            printf("%s", linha);
+        }
+        fclose(arquivo);
+    }
+}
+
+// Função para depositar
+double depositar(Conta *conta) {
+    double dep;
+    printf("Digite o valor a ser depositado: R$");
+    scanf("%lf", &dep);
+
+    if (dep <= 0) {
+        printf("Deposito invalido, depositar um valor maior que zero.\n");
+    } else {
+        conta->saldo += dep;
+        printf("Depósito de R$%.2f realizado com sucesso.\n", dep);
+        salvar_transacao("Depósito", "Depósito realizado");
+    }
+    return conta->saldo;
+}
+
+// Funçao para sacar
+double sacar(Conta *conta) {
+    double saque;
+    printf("Digite o valor a ser sacado: R$");
+    scanf("%lf", &saque);
+
+    if (saque <= 0) {
+        printf("Saque invalido, sacar um valor maior que zero.\n");
+    } else if (saque > conta->saldo) {
+        printf("Saque invalido, você está sem saldo.\n");
+    } else {
+        conta->saldo -= saque;
+        printf("Saque de R$%.2f realizado com sucesso.\n", saque);
+        salvar_transacao("Saque", "Saque realizado");
+    }
+    return conta->saldo;
+}
